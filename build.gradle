@@ -13,7 +13,6 @@ group = project.maven_group
 
 repositories {
     mavenCentral()
-    jcenter()
     maven {
         name = "FabricMC"
         url = "https://maven.fabricmc.net"
@@ -58,6 +57,7 @@ dependencies {
     runtimeOnly "org.lwjgl:lwjgl-yoga:${project.lwjgl_version}:natives-macos"
 
     modCompile "curse.maven:breakoutapi-449507:${project.breakoutapi_version}"
+    include "curse.maven:breakoutapi-449507:${project.breakoutapi_version}"
 }
 
 processResources {
