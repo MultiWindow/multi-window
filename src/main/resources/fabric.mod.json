@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "multi-window",
+  "version": "${version}",
+  "name": "Multi Window",
+  "description": "Make Minecraft feel like GIMP! Split out all GUIs as windows!",
+  "authors": [
+    "kb1000"
+  ],
+  "contact": {},
+  "license": "LGPL-3.0",
+  "icon": "assets/multi-window/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "client": [
+      "de.kb1000.multiwindow.client.MultiWindowClient"
+    ],
+    "main": [
+      "de.kb1000.multiwindow.MultiWindow"
+    ]
+  },
+  "mixins": [
+    "multi-window.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.11.1",
+    "fabric": "*",
+    "minecraft": "1.17-alpha.21.7.a"
+  }
+}
