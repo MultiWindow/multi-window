@@ -24,9 +24,6 @@ repositories {
         url = "https://raw.github.com/SpinyOwl/repo/releases"
     }
     maven {
-        url = "https://cursemaven.com"
-    }
-    maven {
         url = "https://jitpack.io"
     }
 }
@@ -40,13 +37,8 @@ dependencies {
     // Fabric API. This is technically optional, but you probably want it anyway.
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-    // PSA: Some older mods, compiled on Loom 0.2.1, might have outdated Maven POMs.
-    // You may need to force-disable transitiveness on them.
-
-    compile "org.joml:joml:${project.joml_version}"
-    compile "org.liquidengine:cbchain:${project.cbchain_version}"
-    compile "org.apache.commons:commons-collections4:${project.commons_collections_version}"
-
+    // BreakoutAPI: depends on additional LWJGL modules
+    implementation "org.lwjgl:lwjgl-nanovg:${project.lwjgl_version}"
     runtimeOnly "org.lwjgl:lwjgl-nanovg:${project.lwjgl_version}:natives-windows"
     runtimeOnly "org.lwjgl:lwjgl-nanovg:${project.lwjgl_version}:natives-linux"
     runtimeOnly "org.lwjgl:lwjgl-nanovg:${project.lwjgl_version}:natives-macos"
@@ -56,8 +48,8 @@ dependencies {
     runtimeOnly "org.lwjgl:lwjgl-yoga:${project.lwjgl_version}:natives-linux"
     runtimeOnly "org.lwjgl:lwjgl-yoga:${project.lwjgl_version}:natives-macos"
 
-    modCompile "curse.maven:breakoutapi-449507:${project.breakoutapi_version}"
-    include "curse.maven:breakoutapi-449507:${project.breakoutapi_version}"
+    modCompile "com.github.kb-1000:breakoutapi:${project.breakoutapi_version}"
+    include "com.github.kb-1000:breakoutapi:${project.breakoutapi_version}"
 }
 
 processResources {
