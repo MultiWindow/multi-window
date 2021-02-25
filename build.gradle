@@ -48,8 +48,8 @@ dependencies {
     runtimeOnly "org.lwjgl:lwjgl-yoga:${project.lwjgl_version}:natives-linux"
     runtimeOnly "org.lwjgl:lwjgl-yoga:${project.lwjgl_version}:natives-macos"
 
-    modCompile "com.github.kb-1000:breakoutapi:${project.breakoutapi_version}"
-    include "com.github.kb-1000:breakoutapi:${project.breakoutapi_version}"
+    modCompile "com.github.raphydaphy:breakoutapi:${project.breakoutapi_version}"
+    include "com.github.raphydaphy:breakoutapi:${project.breakoutapi_version}"
 }
 
 processResources {
