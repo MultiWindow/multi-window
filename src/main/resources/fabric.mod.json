@@ -8,7 +8,7 @@
     "kb1000"
   ],
   "contact": {},
-  "license": "LGPL-3.0",
+  "license": "LGPL-3.0-or-later",
   "icon": "assets/multi-window/icon.png",
   "environment": "*",
   "entrypoints": {
