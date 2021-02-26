@@ -3,6 +3,7 @@ package de.kb1000.multiwindow.mixin.client;
 import de.kb1000.multiwindow.MultiWindow;
 import de.kb1000.multiwindow.accessor.client.ScreenAccessor;
 import de.kb1000.multiwindow.client.gui.ScreenBreakout;
+import de.kb1000.multiwindow.client.gui.ScreenTreeElement;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.screen.Screen;
@@ -19,6 +20,8 @@ public class ScreenMixin implements ScreenAccessor {
     private final Identifier breakoutId = new Identifier(MultiWindow.MOD_ID, "screen_" + breakoutIdCounter++);
     @Unique
     private ScreenBreakout breakout;
+    @Unique
+    private ScreenTreeElement treeElement;
 
     @Override
     public Identifier multi_window_getBreakoutId() {
