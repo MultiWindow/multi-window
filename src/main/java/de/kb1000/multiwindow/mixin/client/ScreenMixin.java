@@ -23,7 +23,7 @@ public class ScreenMixin implements ScreenAccessor {
     @Unique
     private @Nullable ScreenBreakout breakout;
     @Unique
-    private @Nullable ScreenTreeElement treeElement;
+    private final @NotNull ScreenTreeElement treeElement = new ScreenTreeElement(null, (Screen) (Object) this);
 
     @Override
     public @NotNull Identifier multi_window_getBreakoutId() {
@@ -36,5 +36,10 @@ public class ScreenMixin implements ScreenAccessor {
             return breakout;
         }
         return breakout = new ScreenBreakout(breakoutId, (Screen) (Object) this);
+    }
+
+    @Override
+    public @NotNull ScreenTreeElement multi_window_getTreeElement() {
+        return treeElement;
     }
 }
