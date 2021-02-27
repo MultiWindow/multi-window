@@ -8,6 +8,8 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.util.Identifier;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
@@ -17,19 +19,19 @@ public class ScreenMixin implements ScreenAccessor {
     @Unique
     private static long breakoutIdCounter;
     @Unique
-    private final Identifier breakoutId = new Identifier(MultiWindow.MOD_ID, "screen_" + breakoutIdCounter++);
+    private final @NotNull Identifier breakoutId = new Identifier(MultiWindow.MOD_ID, "screen_" + breakoutIdCounter++);
     @Unique
-    private ScreenBreakout breakout;
+    private @Nullable ScreenBreakout breakout;
     @Unique
-    private ScreenTreeElement treeElement;
+    private @Nullable ScreenTreeElement treeElement;
 
     @Override
-    public Identifier multi_window_getBreakoutId() {
+    public @NotNull Identifier multi_window_getBreakoutId() {
         return breakoutId;
     }
 
     @Override
-    public ScreenBreakout multi_window_getBreakout() {
+    public @NotNull ScreenBreakout multi_window_getBreakout() {
         if (breakout != null && !breakout.isClosing()) {
             return breakout;
         }

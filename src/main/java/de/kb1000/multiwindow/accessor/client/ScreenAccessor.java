@@ -4,9 +4,10 @@ import de.kb1000.multiwindow.client.gui.ScreenBreakout;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.util.Identifier;
+import org.jetbrains.annotations.NotNull;
 
 @Environment(EnvType.CLIENT)
 public interface ScreenAccessor {
-    Identifier multi_window_getBreakoutId();
-    ScreenBreakout multi_window_getBreakout();
+    @NotNull Identifier multi_window_getBreakoutId();
+    @NotNull ScreenBreakout multi_window_getBreakout();
 }
