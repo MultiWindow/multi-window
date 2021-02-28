@@ -31,6 +31,9 @@ public class MinecraftClientMixin {
     @Unique
     private final @NotNull List<@NotNull Screen> screensOpened = new ArrayList<>();
 
+    @Unique
+    private int renderDepth = 0;
+
     @Redirect(method = "openScreen", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/Screen;init(Lnet/minecraft/client/MinecraftClient;II)V"))
     private void screenInit(Screen screen, MinecraftClient client, int width, int height) {
         final ScreenContextTracker.ScreenContextElement previousContext = ScreenContextTracker.getCurrentContext();
@@ -56,13 +59,21 @@ public class MinecraftClientMixin {
         screensOpened.add(screen);
     }
 
+    @Inject(method = "render", at = @At(value = "INVOKE_STRING", args = "ldc=yield", target = "Lnet/minecraft/util/profiler/Profiler;swap(Ljava/lang/String;)V", shift = At.Shift.BEFORE))
+    private void beforeBreakoutsRendered(@NotNull CallbackInfo ci) {
+        renderDepth += 1;
+    }
+
     @Inject(method = "render", at = @At(value = "INVOKE_STRING", args = "ldc=yield", target = "Lnet/minecraft/util/profiler/Profiler;swap(Ljava/lang/String;)V"))
     private void afterBreakoutsRendered(@NotNull CallbackInfo ci) {
-        for (Screen screen : screensOpened) {
-            final @NotNull ScreenAccessor screenAccessor = (ScreenAccessor) screen;
-            final @NotNull Identifier breakoutId = screenAccessor.multi_window_getBreakoutId();
-            BreakoutAPIClient.openBreakout(breakoutId, screenAccessor.multi_window_getBreakout());
+        renderDepth -= 1;
+        if (renderDepth <= 0) {
+            for (Screen screen : screensOpened) {
+                final @NotNull ScreenAccessor screenAccessor = (ScreenAccessor) screen;
+                final @NotNull Identifier breakoutId = screenAccessor.multi_window_getBreakoutId();
+                BreakoutAPIClient.openBreakout(breakoutId, screenAccessor.multi_window_getBreakout());
+            }
+            screensOpened.clear();
         }
-        screensOpened.clear();
     }
 }
