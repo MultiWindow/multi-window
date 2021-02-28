@@ -56,7 +56,13 @@ public class MinecraftClientMixin {
             return;
         }
 
-        screensOpened.add(screen);
+        if (renderDepth > 0) {
+            screensOpened.add(screen);
+        } else {
+            final @NotNull ScreenAccessor screenAccessor = (ScreenAccessor) screen;
+            final @NotNull Identifier breakoutId = screenAccessor.multi_window_getBreakoutId();
+            BreakoutAPIClient.openBreakout(breakoutId, screenAccessor.multi_window_getBreakout());
+        }
     }
 
     @Inject(method = "render", at = @At(value = "INVOKE_STRING", args = "ldc=yield", target = "Lnet/minecraft/util/profiler/Profiler;swap(Ljava/lang/String;)V", shift = At.Shift.BEFORE))
