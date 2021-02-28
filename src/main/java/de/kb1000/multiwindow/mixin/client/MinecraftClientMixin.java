@@ -22,11 +22,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.ArrayList;
 import java.util.List;
 
-@Mixin(MinecraftClient.class)
+@Mixin(value = MinecraftClient.class, priority = 1100)
 @Environment(EnvType.CLIENT)
 public class MinecraftClientMixin {
     @Unique
     private final @NotNull List<@NotNull ScreenTreeElement> trees = new ArrayList<>();
+
+    @Unique
+    private final @NotNull List<@NotNull Screen> screensOpened = new ArrayList<>();
 
     @Redirect(method = "openScreen", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/Screen;init(Lnet/minecraft/client/MinecraftClient;II)V"))
     private void screenInit(Screen screen, MinecraftClient client, int width, int height) {
@@ -50,8 +53,16 @@ public class MinecraftClientMixin {
             return;
         }
 
-        final @NotNull ScreenAccessor screenAccessor = (ScreenAccessor) screen;
-        final @NotNull Identifier breakoutId = screenAccessor.multi_window_getBreakoutId();
-        BreakoutAPIClient.openBreakout(breakoutId, screenAccessor.multi_window_getBreakout());
+        screensOpened.add(screen);
+    }
+
+    @Inject(method = "render", at = @At(value = "INVOKE_STRING", args = "ldc=yield", target = "Lnet/minecraft/util/profiler/Profiler;swap(Ljava/lang/String;)V"))
+    private void afterBreakoutsRendered(@NotNull CallbackInfo ci) {
+        for (Screen screen : screensOpened) {
+            final @NotNull ScreenAccessor screenAccessor = (ScreenAccessor) screen;
+            final @NotNull Identifier breakoutId = screenAccessor.multi_window_getBreakoutId();
+            BreakoutAPIClient.openBreakout(breakoutId, screenAccessor.multi_window_getBreakout());
+        }
+        screensOpened.clear();
     }
 }
