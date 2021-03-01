@@ -41,12 +41,8 @@ public class MinecraftClientMixin {
             previousContext.abort = true;
         }
         ScreenContextTracker.pushContext(ScreenContextTracker.ScreenContextElement.ScreenEventType.INIT, ((ScreenAccessor) screen).multi_window_getTreeElement());
-        ScreenContextTracker.ScreenContextElement thisContext;
-        try {
-            screen.init(client, width, height);
-        } finally {
-            thisContext = ScreenContextTracker.popContext();
-        }
+        screen.init(client, width, height);
+        ScreenContextTracker.ScreenContextElement thisContext = ScreenContextTracker.popContext();
 
         if (screen instanceof TitleScreen) {
             return;

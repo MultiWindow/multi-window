@@ -11,7 +11,12 @@ public class ScreenContextTracker {
         }
 
         public enum ScreenEventType {
-            INIT, RENDER
+            INIT,
+            RENDER,
+            MOUSE_BUTTON,
+            CURSOR_POS,
+            MOUSE_SCROLL,
+            FILES_DROPPED,
         }
 
         public final ScreenEventType type;

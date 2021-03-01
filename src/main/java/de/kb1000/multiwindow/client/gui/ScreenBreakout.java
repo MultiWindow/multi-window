@@ -25,8 +25,8 @@ public class ScreenBreakout extends Breakout {
     private boolean isClosing;
     private double x;
     private double y;
-    private MinecraftClient client;
-    private Queue<Runnable> queue = new ConcurrentLinkedQueue<>();
+    private final MinecraftClient client;
+    private final Queue<Runnable> queue = new ConcurrentLinkedQueue<>();
 
     public ScreenBreakout(Identifier breakoutId, Screen screen) {
         super(breakoutId, new BreakoutWindow(screen.getTitle().getString(), screen.width, screen.height));
