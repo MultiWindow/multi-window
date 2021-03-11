@@ -122,12 +122,12 @@ public class ScreenBreakout extends Breakout {
     }
 
     @Override
-    public void render() {
-        super.render();
+    public void render(MatrixStack stack) {
+        super.render(stack);
         while (!queue.isEmpty()) {
             queue.poll().run();
         }
-        screen.render(new MatrixStack(), (int) x, (int) y, this.client.getLastFrameDuration());
+        screen.render(stack, (int) x, (int) y, this.client.getLastFrameDuration());
         while (!queue.isEmpty()) {
             queue.poll().run();
         }
