@@ -1,20 +1,24 @@
 package de.kb1000.multiwindow.client.gui;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.raphydaphy.breakoutapi.breakout.Breakout;
-import com.raphydaphy.breakoutapi.breakout.window.BreakoutWindow;
 import de.kb1000.multiwindow.accessor.client.ScreenAccessor;
+import de.kb1000.multiwindow.client.gl.GlContext;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gl.SimpleFramebuffer;
+import net.minecraft.client.gl.WindowFramebuffer;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.util.GlfwUtil;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Matrix4f;
 import org.jetbrains.annotations.NotNull;
+import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWDropCallback;
+import org.lwjgl.opengl.GL30;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -27,7 +31,9 @@ import static org.lwjgl.glfw.GLFW.GLFW_MOD_CONTROL;
 import static org.lwjgl.glfw.GLFW.GLFW_PRESS;
 
 @Environment(EnvType.CLIENT)
-public class ScreenBreakout extends Breakout {
+public class ScreenWindow {
+    private final GlContext context;
+    private final WindowFramebuffer framebuffer;
     private final @NotNull Screen screen;
     private boolean isClosing;
     private double x;
@@ -39,12 +45,18 @@ public class ScreenBreakout extends Breakout {
     private int field_1796;
     private double glfwTime;
 
-    public ScreenBreakout(Identifier breakoutId, @NotNull Screen screen) {
-        super(breakoutId, new BreakoutWindow(screen.getTitle().getString(), screen.width, screen.height));
-        this.screen = screen;
+    public ScreenWindow(@NotNull Screen screen) {
         this.client = Screens.getClient(screen);
+        this.context = new GlContext(screen.width, screen.height, screen.getTitle().getString(), client.getWindow().getHandle());
+        try (var ignored = this.context.setContext()) {
+            this.framebuffer = new WindowFramebuffer(screen.width, screen.height);
+        }
+        this.context.onSizeChanged.register((window, width, height) -> {
+            this.framebuffer.resize(width, height, MinecraftClient.IS_SYSTEM_MAC);
+        });
+        this.screen = screen;
         // TODO: make these run in render or update instead of on the main thread
-        InputUtil.setMouseCallbacks(window.getHandle(),
+        InputUtil.setMouseCallbacks(context.getHandle(),
                 (window, x, y) -> this.client.execute(() -> this.onCursorPos(window, x, y)),
                 (window, button, action, mods) -> this.execute(() -> this.onMouseButton(window, button, action, mods)),
                 (window, xOffset, yOffset) -> this.client.execute(() -> this.onMouseScroll(window, xOffset, yOffset)),
@@ -100,7 +112,7 @@ public class ScreenBreakout extends Breakout {
                 this.activeButton = -1;
             }
 
-            if (this.client.overlay == null) {
+            if (this.client.getOverlay() == null) {
                 double d = this.x * (double)this.client.getWindow().getScaledWidth() / (double)this.client.getWindow().getWidth();
                 double e = this.y * (double)this.client.getWindow().getScaledHeight() / (double)this.client.getWindow().getHeight();
                 final int finalButton = button;
@@ -121,29 +133,80 @@ public class ScreenBreakout extends Breakout {
     private void onFilesDropped(long window, List<Path> names) {
     }
 
-    @Override
-    public void render() {
-        super.render();
-        while (!queue.isEmpty()) {
-            queue.poll().run();
-        }
-        screen.render(new MatrixStack(), (int) x, (int) y, this.client.getLastFrameDuration());
-        while (!queue.isEmpty()) {
-            queue.poll().run();
-        }
-    }
+//    @Override
+//    public void setupRender() {
+//        RenderContextTracker.pushContext(this);
+//        super.setupRender();
+//        RenderContextTracker.popContext();
+//    }
+//
+//    @Override
+//    public void render(MatrixStack stack) {
+//        super.render(stack);
+//        while (!queue.isEmpty()) {
+//            queue.poll().run();
+//        }
+//        screen.render(stack, (int) x, (int) y, this.client.getLastFrameDuration());
+//        while (!queue.isEmpty()) {
+//            queue.poll().run();
+//        }
+//    }
 
-    @Override
     public void destroy() {
-        super.destroy();
-        if (!isClosing) {
-            isClosing = true;
-            screen.onClose();
+        context.destroy();
+        screen.onClose();
+    }
+
+    public void render() {
+        try (var ignored = context.setContext()) {
+            context.getState().glRecord();
+            MatrixStack stack = RenderSystem.getModelViewStack();
+            stack.push();
+            RenderSystem.applyModelViewMatrix();
+            RenderSystem.clear(GL30.GL_COLOR_BUFFER_BIT | GL30.GL_DEPTH_BUFFER_BIT, MinecraftClient.IS_SYSTEM_MAC);
+
+            framebuffer.beginWrite(true);
+
+            RenderSystem.viewport(0, 0, context.getWidth(), context.getHeight());
+
+            RenderSystem.enableTexture();
+            RenderSystem.enableCull();
+
+            RenderSystem.clearColor(1, 1, 1, 1);
+            RenderSystem.clear(GL30.GL_COLOR_BUFFER_BIT | GL30.GL_DEPTH_BUFFER_BIT, MinecraftClient.IS_SYSTEM_MAC);
+
+            RenderSystem.depthFunc(GL30.GL_LEQUAL);
+
+            Matrix4f matrix4f = Matrix4f.projectionMatrix(0.0F, context.getWidth(), 0.0F, context.getHeight(), 1000.0F, 3000.0F);
+            RenderSystem.setProjectionMatrix(matrix4f);
+
+            stack.loadIdentity();
+            stack.translate(0.0D, 0.0D, -2000.0D);
+            RenderSystem.applyModelViewMatrix();
+            DiffuseLighting.enableGuiDepthLighting();
+
+            while (!queue.isEmpty()) {
+                queue.poll().run();
+            }
+            screen.render(stack, (int) x, (int) y, this.client.getLastFrameDuration());
+            while (!queue.isEmpty()) {
+                queue.poll().run();
+            }
+
+            this.framebuffer.endWrite();
+            stack.pop();
+
+            stack.push();
+            RenderSystem.applyModelViewMatrix();
+            this.framebuffer.draw(context.getWidth(), context.getHeight());
+            stack.pop();
+
+            RenderSystem.flipFrame(context.getHandle());
         }
     }
 
-    // TODO: make closing a Screen close the coupled ScreenBreakout when isClosing is false
     public boolean isClosing() {
-        return isClosing;
+        return GLFW.glfwWindowShouldClose(context.getHandle());
     }
+
 }

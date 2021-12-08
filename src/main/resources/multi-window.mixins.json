@@ -3,12 +3,14 @@
   "minVersion": "0.8",
   "package": "de.kb1000.multiwindow.mixin",
   "compatibilityLevel": "JAVA_8",
-  "mixins": [
-  ],
   "client": [
+    "client.VertexFormatMixin",
     "client.MinecraftClientMixin",
     "client.MouseMixin",
-    "client.ScreenMixin"
+    "client.ScreenMixin",
+    "client.BufferRendererAccessor",
+    "client.CapabilityTrackerAccessor",
+    "client.GlStateManagerAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

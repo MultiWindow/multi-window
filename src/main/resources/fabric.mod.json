@@ -22,6 +22,7 @@
   "mixins": [
     "multi-window.mixins.json"
   ],
+  "accessWidener": "multi-window.accesswidener",
   "depends": {
     "fabricloader": ">=0.11.1",
     "fabric": "*",
