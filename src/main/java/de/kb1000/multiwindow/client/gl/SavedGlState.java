@@ -4,10 +4,11 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import de.kb1000.multiwindow.mixin.client.BufferRendererAccessor;
 import de.kb1000.multiwindow.mixin.client.CapabilityTrackerAccessor;
 import de.kb1000.multiwindow.mixin.client.GlStateManagerAccessor;
-import org.lwjgl.opengl.GL30;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
+
+import static org.lwjgl.opengl.GL32C.*;
 
 public class SavedGlState {
     private boolean blendEnabled;
@@ -55,38 +56,38 @@ public class SavedGlState {
     private int currentElementBufferObject;
 
     public void glRecord() {
-        blendEnabled = GL30.glIsEnabled(GL30.GL_BLEND);
-        blendSrcFactorRGB = GL30.glGetInteger(GL30.GL_BLEND_SRC_RGB);
-        blendDstFactorRGB = GL30.glGetInteger(GL30.GL_BLEND_DST_RGB);
-        blendSrcFactorAlpha = GL30.glGetInteger(GL30.GL_BLEND_SRC_ALPHA);
-        blendDstFactorAlpha = GL30.glGetInteger(GL30.GL_BLEND_DST_ALPHA);
+        blendEnabled = glIsEnabled(GL_BLEND);
+        blendSrcFactorRGB = glGetInteger(GL_BLEND_SRC_RGB);
+        blendDstFactorRGB = glGetInteger(GL_BLEND_DST_RGB);
+        blendSrcFactorAlpha = glGetInteger(GL_BLEND_SRC_ALPHA);
+        blendDstFactorAlpha = glGetInteger(GL_BLEND_DST_ALPHA);
 
-        depthFunc = GL30.glGetInteger(GL30.GL_DEPTH_FUNC);
-        depthMask = GL30.glGetBoolean(GL30.GL_DEPTH_WRITEMASK);
-        depthTestEnabled = GL30.glIsEnabled(GL30.GL_DEPTH_TEST);
+        depthFunc = glGetInteger(GL_DEPTH_FUNC);
+        depthMask = glGetBoolean(GL_DEPTH_WRITEMASK);
+        depthTestEnabled = glIsEnabled(GL_DEPTH_TEST);
 
-        cullEnabled = GL30.glIsEnabled(GL30.GL_CULL_FACE);
-        cullMode = GL30.glGetInteger(GL30.GL_CULL_FACE_MODE);
+        cullEnabled = glIsEnabled(GL_CULL_FACE);
+        cullMode = glGetInteger(GL_CULL_FACE_MODE);
 
-        polyOffsetFill = GL30.glIsEnabled(GL30.GL_POLYGON_OFFSET_FILL);
-        polyOffsetLine = GL30.glIsEnabled(GL30.GL_POLYGON_OFFSET_LINE);
-        polyOffsetFactor = GL30.glGetFloat(GL30.GL_POLYGON_OFFSET_FACTOR);
-        polyOffsetUnits = GL30.glGetFloat(GL30.GL_POLYGON_OFFSET_UNITS);
+        polyOffsetFill = glIsEnabled(GL_POLYGON_OFFSET_FILL);
+        polyOffsetLine = glIsEnabled(GL_POLYGON_OFFSET_LINE);
+        polyOffsetFactor = glGetFloat(GL_POLYGON_OFFSET_FACTOR);
+        polyOffsetUnits = glGetFloat(GL_POLYGON_OFFSET_UNITS);
 
-        colorLogicEnabled = GL30.glIsEnabled(GL30.GL_COLOR_LOGIC_OP);
-        colorLogicOp = GL30.glGetInteger(GL30.GL_LOGIC_OP_MODE);
+        colorLogicEnabled = glIsEnabled(GL_COLOR_LOGIC_OP);
+        colorLogicOp = glGetInteger(GL_LOGIC_OP_MODE);
 
-        stencilSubFunc = GL30.glGetInteger(GL30.GL_STENCIL_FUNC);
-        stencilSubRef = GL30.glGetInteger(GL30.GL_STENCIL_REF);
-        stencilSubMask = GL30.glGetInteger(GL30.GL_STENCIL_VALUE_MASK);
-        stencilMask = GL30.glGetInteger(GL30.GL_STENCIL_WRITEMASK);
-        stencilSfail = GL30.glGetInteger(GL30.GL_STENCIL_FAIL);
-        stencilDpfail = GL30.glGetInteger(GL30.GL_STENCIL_PASS_DEPTH_FAIL);
-        stencilDppass = GL30.glGetInteger(GL30.GL_STENCIL_PASS_DEPTH_PASS);
+        stencilSubFunc = glGetInteger(GL_STENCIL_FUNC);
+        stencilSubRef = glGetInteger(GL_STENCIL_REF);
+        stencilSubMask = glGetInteger(GL_STENCIL_VALUE_MASK);
+        stencilMask = glGetInteger(GL_STENCIL_WRITEMASK);
+        stencilSfail = glGetInteger(GL_STENCIL_FAIL);
+        stencilDpfail = glGetInteger(GL_STENCIL_PASS_DEPTH_FAIL);
+        stencilDppass = glGetInteger(GL_STENCIL_PASS_DEPTH_PASS);
 
-        scissorTestEnabled = GL30.glIsEnabled(GL30.GL_SCISSOR_TEST);
+        scissorTestEnabled = glIsEnabled(GL_SCISSOR_TEST);
 
-        activeTexture = GL30.glGetInteger(GL30.GL_ACTIVE_TEXTURE) - GL30.GL_TEXTURE0;
+        activeTexture = glGetInteger(GL_ACTIVE_TEXTURE) - GL_TEXTURE0;
 
 //    GlStateManager.Texture2DState[] textures = GlStateManagerAccessor.getTextures();
 //    for (int i = 0; i < 12; i++) {
@@ -96,7 +97,7 @@ public class SavedGlState {
 
         ByteBuffer buf = MemoryUtil.memAlloc(4);
 
-        GL30.glGetBooleanv(GL30.GL_COLOR_WRITEMASK, buf);
+        glGetBooleanv(GL_COLOR_WRITEMASK, buf);
 
         colorMaskRed = buf.get(0) != 0;
         colorMaskGreen = buf.get(1) != 0;
@@ -105,9 +106,9 @@ public class SavedGlState {
 
         MemoryUtil.memFree(buf);
 
-        currentElementBufferObject = GL30.glGetInteger(GL30.GL_ELEMENT_ARRAY_BUFFER_BINDING);
-        currentVertexArrayObject = GL30.glGetInteger(GL30.GL_VERTEX_ARRAY_BINDING);
-        currentVertexBufferObject = GL30.glGetInteger(GL30.GL_VERTEX_ARRAY_BUFFER_BINDING);
+        currentElementBufferObject = glGetInteger(GL_ELEMENT_ARRAY_BUFFER_BINDING);
+        currentVertexArrayObject = glGetInteger(GL_VERTEX_ARRAY_BINDING);
+        currentVertexBufferObject = glGetInteger(GL_ARRAY_BUFFER_BINDING);
     }
 
     public void record() {

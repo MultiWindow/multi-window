@@ -13,7 +13,15 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.util.GlfwUtil;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.client.util.Window;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.util.Util;
+import net.minecraft.util.crash.CrashCallable;
+import net.minecraft.util.crash.CrashException;
+import net.minecraft.util.crash.CrashReport;
+import net.minecraft.util.crash.CrashReportSection;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Matrix4f;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
@@ -24,11 +32,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static org.lwjgl.glfw.GLFW.GLFW_MOD_CONTROL;
 import static org.lwjgl.glfw.GLFW.GLFW_PRESS;
+import static org.lwjgl.opengl.GL32C.GL_DEPTH_BUFFER_BIT;
 
 @Environment(EnvType.CLIENT)
 public class ScreenWindow {
@@ -159,15 +169,12 @@ public class ScreenWindow {
 
     public void render() {
         try (var ignored = context.setContext()) {
+            MatrixStack modelViewStack = RenderSystem.getModelViewStack();
+            modelViewStack.push();
+
             context.getState().glRecord();
-            MatrixStack stack = RenderSystem.getModelViewStack();
-            stack.push();
-            RenderSystem.applyModelViewMatrix();
-            RenderSystem.clear(GL30.GL_COLOR_BUFFER_BIT | GL30.GL_DEPTH_BUFFER_BIT, MinecraftClient.IS_SYSTEM_MAC);
 
             framebuffer.beginWrite(true);
-
-            RenderSystem.viewport(0, 0, context.getWidth(), context.getHeight());
 
             RenderSystem.enableTexture();
             RenderSystem.enableCull();
@@ -179,28 +186,60 @@ public class ScreenWindow {
 
             Matrix4f matrix4f = Matrix4f.projectionMatrix(0.0F, context.getWidth(), 0.0F, context.getHeight(), 1000.0F, 3000.0F);
             RenderSystem.setProjectionMatrix(matrix4f);
-
-            stack.loadIdentity();
-            stack.translate(0.0D, 0.0D, -2000.0D);
+            modelViewStack.loadIdentity();
+            modelViewStack.translate(0.0, 0.0, -2000.0);
             RenderSystem.applyModelViewMatrix();
             DiffuseLighting.enableGuiDepthLighting();
+            MatrixStack stack = new MatrixStack();
+            /*if (this.client.world != null) {
+                this.client.getProfiler().swap("gui");
+                     this.renderFloatingItem(this.client.getWindow().getScaledWidth(), this.client.getWindow().getScaledHeight(), tickDelta);
+                RenderSystem.clear(256, MinecraftClient.IS_SYSTEM_MAC);
 
-            while (!queue.isEmpty()) {
-                queue.poll().run();
-            }
-            screen.render(stack, (int) x, (int) y, this.client.getLastFrameDuration());
-            while (!queue.isEmpty()) {
-                queue.poll().run();
+                this.client.getProfiler().pop();
+            }*/
+
+            try {
+                while (!queue.isEmpty()) {
+                    queue.poll().run();
+                }
+                screen.render(stack, (int) x, (int) y, this.client.getLastFrameDuration());
+                while (!queue.isEmpty()) {
+                    queue.poll().run();
+                }
+            } catch (Throwable var15) {
+                CrashReport crashReport = CrashReport.create(var15, "Rendering screen");
+                CrashReportSection crashReportSection = crashReport.addElement("Screen render details");
+                crashReportSection.add("Screen name", () -> screen.getClass().getCanonicalName());
+                crashReportSection.add(
+                        "Mouse location",
+                        () -> String.format(
+                                Locale.ROOT, "Scaled: (%d, %d). Absolute: (%f, %f)", (int)x, (int)y, x, y
+                        )
+                );
+                // TODO: wrong, fix later
+                crashReportSection.add(
+                        "Screen size",
+                        () -> String.format(
+                                Locale.ROOT,
+                                "Scaled: (%d, %d). Absolute: (%d, %d). Scale factor of %f",
+                                this.client.getWindow().getScaledWidth(),
+                                this.client.getWindow().getScaledHeight(),
+                                this.client.getWindow().getFramebufferWidth(),
+                                this.client.getWindow().getFramebufferHeight(),
+                                this.client.getWindow().getScaleFactor()
+                        )
+                );
+                throw new CrashException(crashReport);
             }
 
             this.framebuffer.endWrite();
-            stack.pop();
+            modelViewStack.pop();
 
-            stack.push();
+            modelViewStack.push();
             RenderSystem.applyModelViewMatrix();
             this.framebuffer.draw(context.getWidth(), context.getHeight());
-            stack.pop();
-
+            modelViewStack.pop();
             RenderSystem.flipFrame(context.getHandle());
         }
     }
