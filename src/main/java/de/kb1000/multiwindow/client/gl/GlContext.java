@@ -1,14 +1,16 @@
 package de.kb1000.multiwindow.client.gl;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import de.kb1000.multiwindow.client.gl.events.*;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.GlDebug;
 import net.minecraft.client.render.VertexFormat;
-import org.lwjgl.glfw.GLFW;
-import org.lwjgl.glfw.GLFWFramebufferSizeCallbackI;
+import org.lwjgl.glfw.*;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,9 +30,29 @@ public class GlContext {
     private final Map<VertexFormat, Integer> vertexArrays = new HashMap<>();
     private final SavedGlState state;
 
-    public final Event<GLFWFramebufferSizeCallbackI> onSizeChanged = EventFactory.createArrayBacked(GLFWFramebufferSizeCallbackI.class, handlers -> (window, width1, height1) -> {
+    public final Event<SizeChangedCallback> onSizeChanged = EventFactory.createArrayBacked(SizeChangedCallback.class, handlers -> (width1, height1) -> {
         for (var handler : handlers) {
-            handler.invoke(window, width1, height1);
+            handler.onSizeChanged(width1, height1);
+        }
+    });
+    public final Event<MouseMoveCallback> onMouseMove = EventFactory.createArrayBacked(MouseMoveCallback.class, handlers -> (x, y) -> {
+        for (var handler : handlers) {
+            handler.onMouseMove(x, y);
+        }
+    });
+    public final Event<MouseButtonCallback> onMouseButton = EventFactory.createArrayBacked(MouseButtonCallback.class, handlers -> (button, action, mods) -> {
+        for (var handler : handlers) {
+            handler.onMouseButton(button, action, mods);
+        }
+    });
+    public final Event<MouseScrollCallback> onMouseScroll = EventFactory.createArrayBacked(MouseScrollCallback.class, handlers -> (xOffset, yOffset) -> {
+        for (var handler : handlers) {
+            handler.onMouseScroll(xOffset, yOffset);
+        }
+    });
+    public final Event<FilesDroppedCallback> onFilesDropped = EventFactory.createArrayBacked(FilesDroppedCallback.class, handlers -> (files) -> {
+        for (var handler : handlers) {
+            handler.onFilesDropped(files);
         }
     });
 
@@ -58,13 +80,31 @@ public class GlContext {
         }
 
         GLFW.glfwSetFramebufferSizeCallback(handle, this::sizeChanged);
+        GLFW.glfwSetCursorPosCallback(handle, (window, xpos, ypos) -> {
+            onMouseMove.invoker().onMouseMove(xpos, ypos);
+        });
+        GLFW.glfwSetMouseButtonCallback(handle, (window, button, action, mods) -> {
+            onMouseButton.invoker().onMouseButton(button, action, mods);
+        });
+        GLFW.glfwSetScrollCallback(handle, (window, xoffset, yoffset) -> {
+            onMouseScroll.invoker().onMouseScroll(xoffset, yoffset);
+        });
+        GLFW.glfwSetDropCallback(handle, (window, count, names) -> {
+            Path[] paths = new Path[count];
+
+            for (int j = 0; j < count; ++j) {
+                paths[j] = Paths.get(GLFWDropCallback.getName(names, j));
+            }
+
+            onFilesDropped.invoker().onFilesDropped(paths);
+        });
     }
 
     private void sizeChanged(long window, int width, int height) {
         this.width = width;
         this.height = height;
 
-        onSizeChanged.invoker().invoke(window, width, height);
+        onSizeChanged.invoker().onSizeChanged(width, height);
     }
 
     public void destroy() {

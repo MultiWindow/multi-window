@@ -61,86 +61,71 @@ public class ScreenWindow {
         try (var ignored = this.context.setContext()) {
             this.framebuffer = new WindowFramebuffer(screen.width, screen.height);
         }
-        this.context.onSizeChanged.register((window, width, height) -> {
+        this.context.onSizeChanged.register((width, height) -> {
             this.framebuffer.resize(width, height, MinecraftClient.IS_SYSTEM_MAC);
         });
         this.screen = screen;
         // TODO: make these run in render or update instead of on the main thread
-        InputUtil.setMouseCallbacks(context.getHandle(),
-                (window, x, y) -> this.client.execute(() -> this.onCursorPos(window, x, y)),
-                (window, button, action, mods) -> this.execute(() -> this.onMouseButton(window, button, action, mods)),
-                (window, xOffset, yOffset) -> this.client.execute(() -> this.onMouseScroll(window, xOffset, yOffset)),
-                (window, count, names) -> {
-                    Path[] paths = new Path[count];
-
-                    for (int j = 0; j < count; ++j) {
-                        paths[j] = Paths.get(GLFWDropCallback.getName(names, j));
-                    }
-
-                    this.client.execute(() -> this.onFilesDropped(window, Arrays.asList(paths)));
-                });
+        this.context.onMouseMove.register((x, y) -> this.client.execute(() -> this.onCursorPos(x, y)));
+        this.context.onMouseButton.register((button, action, mods) -> this.client.execute(() -> this.onMouseButton(button, action, mods)));
+        this.context.onMouseScroll.register((xOffset, yOffset) -> this.client.execute(() -> this.onMouseScroll(xOffset, yOffset)));
+        this.context.onFilesDropped.register(files -> this.client.execute(() -> this.onFilesDropped(List.of(files))));
     }
 
     private void execute(Runnable r) {
         queue.add(r);
     }
 
-
-
-    private void onCursorPos(long window, double x, double y) {
+    private void onCursorPos(double x, double y) {
         this.x = x;
         this.y = y;
     }
 
-    private void onMouseButton(long window, int button, int action, int mods) {
-        if (window == this.client.getWindow().getHandle()) {
-            boolean bl = action == GLFW_PRESS;
-            if (MinecraftClient.IS_SYSTEM_MAC && button == 0) {
-                if (bl) {
-                    if ((mods & GLFW_MOD_CONTROL) == GLFW_MOD_CONTROL) {
-                        button = 1;
-                        ++this.controlLeftTicks;
-                    }
-                } else if (this.controlLeftTicks > 0) {
-                    button = 1;
-                    --this.controlLeftTicks;
-                }
-            }
-
+    private void onMouseButton(int button, int action, int mods) {
+        boolean bl = action == GLFW_PRESS;
+        if (MinecraftClient.IS_SYSTEM_MAC && button == 0) {
             if (bl) {
-                if (this.client.options.touchscreen && this.field_1796++ > 0) {
-                    return;
+                if ((mods & GLFW_MOD_CONTROL) == GLFW_MOD_CONTROL) {
+                    button = 1;
+                    ++this.controlLeftTicks;
                 }
-
-                this.activeButton = button;
-                this.glfwTime = GlfwUtil.getTime();
-            } else if (this.activeButton != -1) {
-                if (this.client.options.touchscreen && --this.field_1796 > 0) {
-                    return;
-                }
-
-                this.activeButton = -1;
-            }
-
-            if (this.client.getOverlay() == null) {
-                double d = this.x * (double)this.client.getWindow().getScaledWidth() / (double)this.client.getWindow().getWidth();
-                double e = this.y * (double)this.client.getWindow().getScaledHeight() / (double)this.client.getWindow().getHeight();
-                final int finalButton = button;
-                ScreenContextTracker.pushContext(ScreenContextTracker.ScreenContextElement.ScreenEventType.MOUSE_BUTTON, ((ScreenAccessor)screen).multi_window_getTreeElement());
-                if (bl) {
-                    Screen.wrapScreenError(() -> this.screen.mouseClicked(d, e, finalButton), "mouseClicked event handler", this.screen.getClass().getCanonicalName());
-                } else {
-                    Screen.wrapScreenError(() -> this.screen.mouseReleased(d, e, finalButton), "mouseReleased event handler", this.screen.getClass().getCanonicalName());
-                }
-                ScreenContextTracker.popContext();
+            } else if (this.controlLeftTicks > 0) {
+                button = 1;
+                --this.controlLeftTicks;
             }
         }
+
+        if (bl) {
+            if (this.client.options.touchscreen && this.field_1796++ > 0) {
+                return;
+            }
+
+            this.activeButton = button;
+            this.glfwTime = GlfwUtil.getTime();
+        } else if (this.activeButton != -1) {
+            if (this.client.options.touchscreen && --this.field_1796 > 0) {
+                return;
+            }
+
+            this.activeButton = -1;
+        }
+
+        double d = this.x * 1;
+        double e = this.y * 1;
+        final int finalButton = button;
+        ScreenContextTracker.pushContext(ScreenContextTracker.ScreenContextElement.ScreenEventType.MOUSE_BUTTON, ((ScreenAccessor)screen).multi_window_getTreeElement());
+        if (bl) {
+            Screen.wrapScreenError(() -> this.screen.mouseClicked(d, e, finalButton), "mouseClicked event handler", this.screen.getClass().getCanonicalName());
+        } else {
+            Screen.wrapScreenError(() -> this.screen.mouseReleased(d, e, finalButton), "mouseReleased event handler", this.screen.getClass().getCanonicalName());
+        }
+        ScreenContextTracker.popContext();
     }
 
-    private void onMouseScroll(long window, double xOffset, double yOffset) {
+    private void onMouseScroll(double xOffset, double yOffset) {
     }
 
-    private void onFilesDropped(long window, List<Path> names) {
+    private void onFilesDropped(List<Path> names) {
     }
 
 //    @Override
