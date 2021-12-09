@@ -2,6 +2,7 @@ package de.kb1000.multiwindow.client.gui;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import de.kb1000.multiwindow.accessor.client.ScreenAccessor;
+import de.kb1000.multiwindow.client.MultiWindowClient;
 import de.kb1000.multiwindow.client.gl.GlContext;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -54,6 +55,7 @@ public class ScreenWindow {
     private int activeButton;
     private int field_1796;
     private double glfwTime;
+    private boolean closing = false;
 
     public ScreenWindow(@NotNull Screen screen) {
         this.client = Screens.getClient(screen);
@@ -62,7 +64,11 @@ public class ScreenWindow {
             this.framebuffer = new WindowFramebuffer(screen.width, screen.height);
         }
         this.context.onSizeChanged.register((width, height) -> {
-            this.framebuffer.resize(width, height, MinecraftClient.IS_SYSTEM_MAC);
+            try (var ignored = context.setContext()) {
+                this.framebuffer.resize(width, height, MinecraftClient.IS_SYSTEM_MAC);
+                screen.width = width;
+                screen.height = height;
+            }
         });
         this.screen = screen;
         // TODO: make these run in render or update instead of on the main thread
@@ -147,9 +153,15 @@ public class ScreenWindow {
 //        }
 //    }
 
+    public void markAsClosing() {
+        closing = true;
+    }
+
     public void destroy() {
         context.destroy();
-        screen.onClose();
+        screen.removed();
+
+        MultiWindowClient.ALL_WINDOWS.remove(this);
     }
 
     public void render() {
@@ -230,7 +242,7 @@ public class ScreenWindow {
     }
 
     public boolean isClosing() {
-        return GLFW.glfwWindowShouldClose(context.getHandle());
+        return context.getHandle() == 0 || closing || GLFW.glfwWindowShouldClose(context.getHandle());
     }
 
 }

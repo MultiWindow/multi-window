@@ -24,7 +24,7 @@ public class GlContext {
         MAIN.glRecord();
     }
 
-    private final long handle;
+    private long handle;
     private int width;
     private int height;
     private final Map<VertexFormat, Integer> vertexArrays = new HashMap<>();
@@ -108,9 +108,17 @@ public class GlContext {
     }
 
     public void destroy() {
-        for (Integer vertexArray : vertexArrays.values()) {
-            GlStateManager._glDeleteVertexArrays(vertexArray);
+        if (this.handle == 0) {
+            throw new IllegalStateException("Trying to destroy context that was already destroyed!");
         }
+
+        try (var ignored = setContext()) {
+            for (Integer vertexArray : vertexArrays.values()) {
+                GlStateManager._glDeleteVertexArrays(vertexArray);
+            }
+        }
+        GLFW.glfwDestroyWindow(this.handle);
+        this.handle = 0;
     }
 
     public int getWidth() {

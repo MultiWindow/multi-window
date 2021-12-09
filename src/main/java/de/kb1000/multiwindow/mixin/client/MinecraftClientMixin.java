@@ -10,6 +10,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.TitleScreen;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -29,12 +30,21 @@ public class MinecraftClientMixin {
     @Unique
     private final @NotNull List<@NotNull Screen> screensOpened = new ArrayList<>();
 
-    @Redirect(method = "setScreen", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/Screen;init(Lnet/minecraft/client/MinecraftClient;II)V"))
-    private void screenInit(Screen screen, MinecraftClient client, int width, int height) {
+    @Inject(method = "setScreen", at = @At("HEAD"))
+    private void settingScreen(@Nullable Screen screen, CallbackInfo ci) {
         final ScreenContextTracker.ScreenContextElement previousContext = ScreenContextTracker.getCurrentContext();
         if (previousContext != null && previousContext.type == ScreenContextTracker.ScreenContextElement.ScreenEventType.INIT) {
             previousContext.abort = true;
         }
+        if (previousContext != null
+            && !(previousContext.treeElement.screen instanceof TitleScreen)
+            && (screen == null || ((ScreenAccessor) screen).multi_window_getTreeElement() == previousContext.treeElement.parent || screen instanceof TitleScreen)) {
+            ((ScreenAccessor) previousContext.treeElement.screen).multi_window_getWindow().markAsClosing();
+        }
+    }
+
+    @Redirect(method = "setScreen", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/Screen;init(Lnet/minecraft/client/MinecraftClient;II)V"))
+    private void screenInit(Screen screen, MinecraftClient client, int width, int height) {
         ScreenContextTracker.pushContext(ScreenContextTracker.ScreenContextElement.ScreenEventType.INIT, ((ScreenAccessor) screen).multi_window_getTreeElement());
         screen.init(client, width, height);
         ScreenContextTracker.ScreenContextElement thisContext = ScreenContextTracker.popContext();
@@ -59,8 +69,7 @@ public class MinecraftClientMixin {
             var window = allWindows.get(i);
 
             if (window.isClosing()) {
-                allWindows.set(i, allWindows.get(allWindows.size() - 1));
-                allWindows.remove(allWindows.size() - 1);
+                window.destroy();
                 i--;
             } else {
                 window.render();

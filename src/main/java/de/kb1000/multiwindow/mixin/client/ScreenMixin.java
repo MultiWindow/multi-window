@@ -1,12 +1,12 @@
 package de.kb1000.multiwindow.mixin.client;
 
 import de.kb1000.multiwindow.accessor.client.ScreenAccessor;
+import de.kb1000.multiwindow.client.gui.ScreenContextTracker;
 import de.kb1000.multiwindow.client.gui.ScreenWindow;
 import de.kb1000.multiwindow.client.gui.ScreenTreeElement;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
@@ -18,7 +18,7 @@ public class ScreenMixin implements ScreenAccessor {
     @Unique
     private @Nullable ScreenWindow window;
     @Unique
-    private final @NotNull ScreenTreeElement treeElement = new ScreenTreeElement(null, (Screen) (Object) this);
+    private @Nullable ScreenTreeElement treeElement;
 
     @Override
     public @NotNull ScreenWindow multi_window_getWindow() {
@@ -30,6 +30,10 @@ public class ScreenMixin implements ScreenAccessor {
 
     @Override
     public @NotNull ScreenTreeElement multi_window_getTreeElement() {
+        if (treeElement == null) {
+            treeElement = new ScreenTreeElement(ScreenContextTracker.getCurrentContext() == null ? null : ScreenContextTracker.getCurrentContext().treeElement, (Screen) (Object) this);
+        }
+
         return treeElement;
     }
 }
