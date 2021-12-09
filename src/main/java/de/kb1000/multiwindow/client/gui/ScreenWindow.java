@@ -8,30 +8,20 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.SimpleFramebuffer;
 import net.minecraft.client.gl.WindowFramebuffer;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.util.GlfwUtil;
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.client.util.Window;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.util.Util;
-import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Matrix4f;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
-import org.lwjgl.glfw.GLFWDropCallback;
 import org.lwjgl.opengl.GL30;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Queue;
@@ -39,7 +29,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static org.lwjgl.glfw.GLFW.GLFW_MOD_CONTROL;
 import static org.lwjgl.glfw.GLFW.GLFW_PRESS;
-import static org.lwjgl.opengl.GL32C.GL_DEPTH_BUFFER_BIT;
 
 @Environment(EnvType.CLIENT)
 public class ScreenWindow {
@@ -83,14 +72,25 @@ public class ScreenWindow {
     }
 
     private void onCursorPos(double x, double y) {
+        Screen.wrapScreenError(() -> screen.mouseMoved(x, y), "mouseMoved event handler", screen.getClass().getCanonicalName());
+        if (this.activeButton != -1 && this.glfwTime > 0.0D) {
+            double f = (x - this.x) * (double)this.client.getWindow().getScaledWidth() / (double)this.client.getWindow().getWidth();
+            double g = (y - this.y) * (double)this.client.getWindow().getScaledHeight() / (double)this.client.getWindow().getHeight();
+            Screen.wrapScreenError(() -> {
+                screen.mouseDragged(x, y, this.activeButton, x - this.x, y - this.y);
+            }, "mouseDragged event handler", screen.getClass().getCanonicalName());
+        }
+
+        screen.applyMouseMoveNarratorDelay();
+
         this.x = x;
         this.y = y;
     }
 
     private void onMouseButton(int button, int action, int mods) {
-        boolean bl = action == GLFW_PRESS;
+        boolean isPress = action == GLFW_PRESS;
         if (MinecraftClient.IS_SYSTEM_MAC && button == 0) {
-            if (bl) {
+            if (isPress) {
                 if ((mods & GLFW_MOD_CONTROL) == GLFW_MOD_CONTROL) {
                     button = 1;
                     ++this.controlLeftTicks;
@@ -101,7 +101,7 @@ public class ScreenWindow {
             }
         }
 
-        if (bl) {
+        if (isPress) {
             if (this.client.options.touchscreen && this.field_1796++ > 0) {
                 return;
             }
@@ -120,7 +120,7 @@ public class ScreenWindow {
         double e = this.y * 1;
         final int finalButton = button;
         ScreenContextTracker.pushContext(ScreenContextTracker.ScreenContextElement.ScreenEventType.MOUSE_BUTTON, ((ScreenAccessor)screen).multi_window_getTreeElement());
-        if (bl) {
+        if (isPress) {
             Screen.wrapScreenError(() -> this.screen.mouseClicked(d, e, finalButton), "mouseClicked event handler", this.screen.getClass().getCanonicalName());
         } else {
             Screen.wrapScreenError(() -> this.screen.mouseReleased(d, e, finalButton), "mouseReleased event handler", this.screen.getClass().getCanonicalName());
@@ -129,9 +129,14 @@ public class ScreenWindow {
     }
 
     private void onMouseScroll(double xOffset, double yOffset) {
+        double totalYScroll = (this.client.options.discreteMouseScroll ? Math.signum(yOffset) : yOffset) * this.client.options.mouseWheelSensitivity;
+
+        this.screen.mouseScrolled(this.x, this.y, totalYScroll);
+        this.screen.applyMousePressScrollNarratorDelay();
     }
 
     private void onFilesDropped(List<Path> names) {
+        this.screen.filesDragged(names);
     }
 
 //    @Override
