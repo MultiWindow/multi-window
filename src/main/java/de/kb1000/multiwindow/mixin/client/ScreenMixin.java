@@ -21,6 +21,11 @@ public class ScreenMixin implements ScreenAccessor {
     private @Nullable ScreenTreeElement treeElement;
 
     @Override
+    public boolean multi_window_hasWindow() {
+        return window != null && !window.isClosing();
+    }
+
+    @Override
     public @NotNull ScreenWindow multi_window_getWindow() {
         if (window != null && !window.isClosing()) {
             return window;
