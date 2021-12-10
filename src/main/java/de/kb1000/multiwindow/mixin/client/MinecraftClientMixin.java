@@ -25,14 +25,19 @@ import java.util.List;
 @Mixin(value = MinecraftClient.class)
 @Environment(EnvType.CLIENT)
 public class MinecraftClientMixin {
+    @Shadow @Nullable public Screen currentScreen;
     @Unique
     private final @NotNull List<@NotNull ScreenTreeElement> trees = new ArrayList<>();
 
     @Unique
     private final @NotNull List<@NotNull Screen> screensOpened = new ArrayList<>();
 
+    @Unique
+    private Screen prevCurrentScreen;
+
     @Inject(method = "setScreen", at = @At("HEAD"))
     private void settingScreen(@Nullable Screen screen, CallbackInfo ci) {
+        prevCurrentScreen = currentScreen;
         final ScreenContextTracker.ScreenContextElement previousContext = ScreenContextTracker.getCurrentContext();
         if (previousContext != null && previousContext.type == ScreenContextTracker.ScreenContextElement.ScreenEventType.INIT) {
             previousContext.abort = true;
@@ -66,6 +71,8 @@ public class MinecraftClientMixin {
 
         final @NotNull ScreenAccessor screenAccessor = (ScreenAccessor) screen;
         MultiWindowClient.ALL_WINDOWS.add(screenAccessor.multi_window_getWindow());
+
+        currentScreen = prevCurrentScreen;
     }
 
     @Inject(method = "render", at = @At(value = "INVOKE_STRING", args = "ldc=yield", target = "Lnet/minecraft/util/profiler/Profiler;swap(Ljava/lang/String;)V"))
